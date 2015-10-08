@@ -59,13 +59,13 @@
          (response-data (phab-http-request "http://phabricator/api/conduit.connect" post-params)))
     (cdr (assoc 'result response-data))))
 
+(setq phab-connection (phab-connect))
+
 (defun phab-get-task (bug-number)
   "TODO"
   (interactive "nEnter bug number:")
-  (let* ((connection (phab-connect))
-         
-         (params (list (cons "task_id" bug-number)
-                       (cons "__conduit__" connection)))
+  (let* ((params (list (cons "task_id" bug-number)
+                       (cons "__conduit__" phab-connection)))
          
          (post-params (list '("post" . "1")
                             '("output" . "json")
@@ -82,14 +82,13 @@
 
     (set-buffer result-buffer)
     (erase-buffer)
-    (auto-fill-mode)
     (insert "* " (cdr (assoc 'objectName bug-data))
             " - " (cdr (assoc 'title bug-data)))
     (insert "\n** Description:\n")
     (insert (replace-regexp-in-string "\*"
                                       "-"
                                       (cdr (assoc 'description bug-data))))
-    
+    (message "%s" bug-data)
     (switch-to-buffer result-buffer)
     (phab-mode)))
 
