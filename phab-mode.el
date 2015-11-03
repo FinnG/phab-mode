@@ -1,4 +1,5 @@
 (require 'json)
+(require 'url)
 
 
 (setq phab-mode-cert  (concat "e5lzmmsjufkp5tcyx5s2ctnmre3ewdt3x46efi7asmz2rxur654gen6"
@@ -34,11 +35,12 @@
                                                 "="
                                                 (url-hexify-string (cdr arg))))
                                       args
-                                      "&"))
-         
-         (result-buffer (url-retrieve-synchronously url)))
-    (set-buffer result-buffer)
-    (json-read-from-string (nth 1 (split-string (buffer-string) "\n\n")))))
+                                      "&")))
+    
+    (with-current-buffer (url-retrieve-synchronously url)
+      (goto-char (+ 1 url-http-end-of-headers))
+      (json-read-object))))
+
 
 (defun phab-connect ()
   "Return a Phabricator connection. TODO: document the returned alist"
