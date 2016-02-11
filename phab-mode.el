@@ -12,18 +12,12 @@
 
 ;;;;;;;;;;;;;;;;;;:TODO sort this code out
 
-
-
 (setq phab-mode-keymap (make-sparse-keymap))
 (define-key phab-mode-keymap (kbd "TAB") 'outline-toggle-children)
 
 (define-derived-mode phab-mode outline-mode "phab-task"
+  (turn-on-auto-fill)
   (use-local-map phab-mode-keymap))
-
-
-
-
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,7 +30,7 @@
                                                 (url-hexify-string (cdr arg))))
                                       args
                                       "&")))
-    
+
     (with-current-buffer (url-retrieve-synchronously url)
       (goto-char (+ 1 url-http-end-of-headers))
       (json-read-object))))
@@ -59,20 +53,77 @@
                             (cons "params" (json-encode-alist phab-params))))
 
          (response-data (phab-http-request "http://phabricator/api/conduit.connect" post-params)))
+
     (cdr (assoc 'result response-data))))
 
-(setq phab-connection (phab-connect))
+(defun phab-print-comment (transaction)
+  (format "** comment!\n%s\n" (cdr (assoc 'comments transaction))))
+
+(defun phab-print-title (bug-number transaction)
+  (format "* T%d %s\n" bug-number (cdr (assoc 'newValue transaction))))
+
+(defun phab-print-transaction (transaction)
+  (let* ((type (cdr (assoc 'transactionType transaction))))
+    (if (string= type "core:comment")
+        (phab-print-comment transaction))))
+
+(defun phab-get-last-transaction (type transactions)
+  (catch 'last-transaction
+    (dotimes (i (length finn-actions) nil)
+      (let* ((transaction (aref transactions (- (length transactions) 1 i)))
+             (loop-type (cdr (assoc 'transactionType transaction))))
+        (if (string= type loop-type)
+            (throw 'last-transaction transaction))))))
+
+(defun phab-get-user (user-id)
+  (message "TODO"))
+
+(defun phab-get-task-full (bug-number)
+  "TODO"
+  (interactive "nEnter bug number:")
+  (let* ((params (list (cons "ids" (list bug-number))
+                       (cons "__conduit__" phab-connection)))
+
+         (post-params (list '("post" . "1")
+                            '("output" . "json")
+                            ;(cons "__conduit__" (json-encode-alist connection))
+                            (cons "params" (json-encode-alist params))))
+
+         (response-data (phab-http-request "http://phabricator/api/maniphest.gettasktransactions"
+                                           post-params))
+
+         (bug-data (cdr (car (cdr (assoc 'result response-data)))))
+    
+         (result-buffer (get-buffer-create (format "*Phabricator: T%s (long)*"
+                                                   bug-number))))
+
+    (set-buffer result-buffer)
+    (setq-local buffer-read-only nil)
+    (erase-buffer)
+    (turn-on-auto-fill)
+
+    (insert (phab-print-title bug-number (phab-get-last-transaction "title" bug-data)))
+    (dotimes (i (length bug-data) nil)
+      (let* ((transaction (aref bug-data i))
+             (type (cdr (assoc 'transactionType transaction))))
+        (if (string= type "core:comment")
+            (insert (phab-print-comment transaction)))))
+
+    (do-auto-fill)
+
+    (switch-to-buffer result-buffer)
+    (phab-mode)))
 
 (defun phab-get-task (bug-number)
   "TODO"
   (interactive "nEnter bug number:")
   (let* ((params (list (cons "task_id" bug-number)
                        (cons "__conduit__" phab-connection)))
-         
+
          (post-params (list '("post" . "1")
                             '("output" . "json")
                             ;(cons "__conduit__" (json-encode-alist connection))
-                            (cons "params" (json-encode-alist params))))    
+                            (cons "params" (json-encode-alist params))))
 
          (response-data (phab-http-request "http://phabricator/api/maniphest.info"
                                            post-params))
@@ -83,6 +134,7 @@
                                                    bug-number))))
 
     (set-buffer result-buffer)
+    (setq-local buffer-read-only nil)
     (erase-buffer)
     (insert "* " (cdr (assoc 'objectName bug-data))
             " - " (cdr (assoc 'title bug-data)))
@@ -94,9 +146,6 @@
     (switch-to-buffer result-buffer)
     (phab-mode)))
 
-    ;; (let* ((result (s-url-http-post "http://phabricator/api/conduit.connect" post-params))
-    ;;        (session-key (assoc 'sessionKey result))
-    ;;        (connection-id (assoc 'connectionID result)))
-    ;;   (message (format "session-key %s" session-key))
-    ;;   (message (format "connection-id %s" connection-id))
-    ;;   (list session-key connection-id)))) ;Construct an alist to return
+
+(setq phab-connection (phab-connect))
+(message "%s" phab-connection)
