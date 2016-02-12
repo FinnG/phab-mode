@@ -147,39 +147,5 @@
     (switch-to-buffer result-buffer)
     (phab-mode)))
 
-(defun phab-get-task (bug-number)
-  "TODO"
-  (interactive "nEnter bug number:")
-  (let* ((params (list (cons "task_id" bug-number)
-                       (cons "__conduit__" phab-connection)))
-
-         (post-params (list '("post" . "1")
-                            '("output" . "json")
-                            ;(cons "__conduit__" (json-encode-alist connection))
-                            (cons "params" (json-encode-alist params))))
-
-         (response-data (phab-http-request "http://phabricator/api/maniphest.info"
-                                           post-params))
-
-         (bug-data (assoc 'result response-data))
-
-         (result-buffer (get-buffer-create (format "*Phabricator: T%s*"
-                                                   bug-number))))
-
-
-    (set-buffer result-buffer)
-    (setq-local buffer-read-only nil)
-    (erase-buffer)
-    (insert "* " (cdr (assoc 'objectName bug-data))
-            " - " (cdr (assoc 'title bug-data)))
-    (insert "\n** Description:\n")
-    (insert (replace-regexp-in-string "\*"
-                                      "-"
-                                      (cdr (assoc 'description bug-data))))
-    (message "%s" bug-data)
-    (switch-to-buffer result-buffer)
-    (phab-mode)))
-
-
 (setq phab-connection (phab-connect))
 (message "%s" phab-connection)
