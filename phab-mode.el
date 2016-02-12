@@ -57,7 +57,9 @@
     (cdr (assoc 'result response-data))))
 
 (defun phab-print-comment (transaction)
-  (format "** comment!\n%s\n" (cdr (assoc 'comments transaction))))
+  (let* ((phid  (cdr (assoc 'authorPHID transaction)))
+         (name (phab-get-user phid)))
+    (format "** %s wrote:\n%s\n" name (cdr (assoc 'comments transaction)))))
 
 (defun phab-print-title (bug-number transaction)
   (format "* T%d %s\n" bug-number (cdr (assoc 'newValue transaction))))
@@ -69,14 +71,26 @@
 
 (defun phab-get-last-transaction (type transactions)
   (catch 'last-transaction
-    (dotimes (i (length finn-actions) nil)
+    (dotimes (i (length transactions) nil)
       (let* ((transaction (aref transactions (- (length transactions) 1 i)))
              (loop-type (cdr (assoc 'transactionType transaction))))
         (if (string= type loop-type)
             (throw 'last-transaction transaction))))))
 
 (defun phab-get-user (user-id)
-  (message "TODO"))
+  "TODO"
+  (let* ((params (list (cons "phids" (list user-id))
+                       (cons "__conduit__" phab-connection)))
+
+         (post-params (list '("post" . "1")
+                            '("output" . "json")
+                            (cons "params" (json-encode-alist params))))
+
+         (response-data (phab-http-request "http://phabricator/api/user.query"
+                                           post-params))
+
+         (username (cdr (assoc 'realName (aref (cdr (assoc 'result response-data)) 0)))))
+    (format "%s" username)))
 
 (defun phab-get-task-full (bug-number)
   "TODO"
