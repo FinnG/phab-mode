@@ -56,13 +56,21 @@
 
     (cdr (assoc 'result response-data))))
 
+(defun phab-sanitize-string (str)
+  (setq-local str (replace-regexp-in-string "\*" "-" str)))
+
 (defun phab-print-comment (transaction)
   (let* ((phid  (cdr (assoc 'authorPHID transaction)))
          (name (phab-get-user phid)))
-    (format "** %s wrote:\n%s\n" name (cdr (assoc 'comments transaction)))))
+    (format "*** %s wrote:\n%s\n"
+            name
+            (phab-sanitize-string (cdr (assoc 'comments transaction))))))
 
-(defun phab-print-title (bug-number transaction)
-  (format "* T%d %s\n" bug-number (cdr (assoc 'newValue transaction))))
+(defun phab-print-title (bug-number title-transaction desc-transaction)
+  (format "* T%d %s\n** Description\n%s\n"
+          bug-number
+          (cdr (assoc 'newValue title-transaction))
+          (phab-sanitize-string (cdr (assoc 'newValue desc-transaction)))))
 
 (defun phab-print-transaction (transaction)
   (let* ((type (cdr (assoc 'transactionType transaction))))
@@ -122,7 +130,12 @@
     (erase-buffer)
     (turn-on-auto-fill)
 
-    (insert (phab-print-title bug-number (phab-get-last-transaction "title" bug-data)))
+    (let ((title-transaction (phab-get-last-transaction "title" bug-data))
+          (desc-transaction (phab-get-last-transaction "description" bug-data)))
+      (insert (phab-print-title bug-number title-transaction desc-transaction)))
+
+    (insert "** Comments\n")
+    
     (dotimes (i (length bug-data) nil)
       (let* ((transaction (aref bug-data i))
              (type (cdr (assoc 'transactionType transaction))))
@@ -152,6 +165,7 @@
 
          (result-buffer (get-buffer-create (format "*Phabricator: T%s*"
                                                    bug-number))))
+
 
     (set-buffer result-buffer)
     (setq-local buffer-read-only nil)
