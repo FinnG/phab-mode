@@ -77,20 +77,26 @@
         (if (string= type loop-type)
             (throw 'last-transaction transaction))))))
 
+(setq phab-user-cache '())
+
 (defun phab-get-user (user-id)
   "TODO"
-  (let* ((params (list (cons "phids" (list user-id))
-                       (cons "__conduit__" phab-connection)))
+  (catch 'out
+    (if (assoc user-id phab-user-cache)
+        (throw 'out (cdr (assoc user-id phab-user-cache))))
+    (let* ((params (list (cons "phids" (list user-id))
+                         (cons "__conduit__" phab-connection)))
 
-         (post-params (list '("post" . "1")
-                            '("output" . "json")
-                            (cons "params" (json-encode-alist params))))
+           (post-params (list '("post" . "1")
+                              '("output" . "json")
+                              (cons "params" (json-encode-alist params))))
 
-         (response-data (phab-http-request "http://phabricator/api/user.query"
-                                           post-params))
+           (response-data (phab-http-request "http://phabricator/api/user.query"
+                                             post-params))
 
-         (username (cdr (assoc 'realName (aref (cdr (assoc 'result response-data)) 0)))))
-    (format "%s" username)))
+           (username (cdr (assoc 'realName (aref (cdr (assoc 'result response-data)) 0)))))
+      (add-to-list 'phab-user-cache (list user-id username))
+      (throw 'out username))))
 
 (defun phab-get-task-full (bug-number)
   "TODO"
