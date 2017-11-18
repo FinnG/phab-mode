@@ -14,6 +14,8 @@
 
 (setq phab-mode-keymap (make-sparse-keymap))
 (define-key phab-mode-keymap (kbd "TAB") 'outline-toggle-children)
+(define-key phab-mode-keymap (kbd "n") 'outline-next-heading)
+(define-key phab-mode-keymap (kbd "p") 'outline-previous-heading)
 
 (define-derived-mode phab-mode outline-mode "phab-task"
   (turn-on-auto-fill)
@@ -70,7 +72,7 @@
   (format "* T%d %s\n** Description\n%s\n"
           bug-number
           (cdr (assoc 'newValue title-transaction))
-          (phab-sanitize-string (cdr (assoc 'newValue desc-transaction)))))
+          (cdr (assoc 'newValue desc-transaction))))
 
 (defun phab-print-transaction (transaction)
   (let* ((type (cdr (assoc 'transactionType transaction))))
@@ -114,7 +116,7 @@
 
          (post-params (list '("post" . "1")
                             '("output" . "json")
-                            ;(cons "__conduit__" (json-encode-alist connection))
+                            (cons "__conduit__" (json-encode-alist phab-connection))
                             (cons "params" (json-encode-alist params))))
 
          (response-data (phab-http-request "http://phabricator/api/maniphest.gettasktransactions"
@@ -149,3 +151,6 @@
 
 (setq phab-connection (phab-connect))
 (message "%s" phab-connection)
+(phab-get-user "PHID-USER-sghrh2czfimlokkc7smz")
+
+
