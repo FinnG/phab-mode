@@ -150,6 +150,8 @@
         (if (string= type "core:comment")
             (insert (phab-print-comment transaction)))))
 
+    (phab-to-org result-buffer)
+
     (do-auto-fill)
 
     (switch-to-buffer result-buffer)
@@ -172,8 +174,17 @@
         (forward-line)))
     (major-mode-restore)))
 
+(defun phab-to-org (buffer)
+  (with-current-buffer buffer
+    (goto-char (point-min))
+    (delete-trailing-whitespace)
+    (let ((next-text "#+BEGIN_SRC"))
+      (while (search-forward "```" nil t)
+        (replace-match next-text)
+        (if (string-equal next-text "#+BEGIN_SRC")
+            (set 'next-text "#+END_SRC")
+          (set 'next-text "#+BEGIN_SRC"))))))
+
 (setq phab-connection (phab-connect))
 (message "%s" phab-connection)
 (phab-get-user "PHID-USER-sghrh2czfimlokkc7smz")
-
-
