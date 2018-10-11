@@ -153,7 +153,8 @@
     (do-auto-fill)
 
     (switch-to-buffer result-buffer)
-    (org-mode)))
+    (org-mode)
+    (read-only-mode)))
 
 (defun smart-fill (buffer-name)
   (with-current-buffer buffer-name
