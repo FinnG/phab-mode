@@ -64,15 +64,21 @@
 (defun phab-print-comment (transaction)
   (let* ((phid  (cdr (assoc 'authorPHID transaction)))
          (name (phab-get-user phid)))
-    (format "*** %s wrote:\n%s\n"
+    (format "*** %s wrote:\n%s\n\n"
             name
-            (phab-sanitize-string (cdr (assoc 'comments transaction))))))
+            (with-temp-buffer
+              (insert (phab-sanitize-string (cdr (assoc 'comments transaction))))
+              (smart-fill (buffer-name))
+              (buffer-string)))))
 
 (defun phab-print-title (bug-number title-transaction desc-transaction)
-  (format "* T%d %s\n** Description\n%s\n"
+  (format "* T%d %s\n\n** Description\n%s\n\n"
           bug-number
           (cdr (assoc 'newValue title-transaction))
-          (cdr (assoc 'newValue desc-transaction))))
+          (with-temp-buffer
+            (insert (cdr (assoc 'newValue desc-transaction)))
+            (smart-fill (buffer-name))
+            (buffer-string))))
 
 (defun phab-print-transaction (transaction)
   (let* ((type (cdr (assoc 'transactionType transaction))))
@@ -136,7 +142,7 @@
           (desc-transaction (phab-get-last-transaction "description" bug-data)))
       (insert (phab-print-title bug-number title-transaction desc-transaction)))
 
-    (insert "** Comments\n")
+    (insert "** Comments\n\n")
     
     (dotimes (i (length bug-data) nil)
       (let* ((transaction (aref bug-data i))
@@ -147,7 +153,23 @@
     (do-auto-fill)
 
     (switch-to-buffer result-buffer)
-    (phab-mode)))
+    (org-mode)))
+
+(defun smart-fill (buffer-name)
+  (with-current-buffer buffer-name
+    (message "foo")
+    (major-mode-suspend)
+    (markdown-mode)
+    (goto-char (point-min))
+    (while (not (eq (point) (point-max)))
+      (let ((fill-char (point))
+            (end-of-fill (save-excursion (move-end-of-line 2) (point))))
+        (goto-char fill-char)
+        (markdown-fill-paragraph)
+        (message (format "%s" end-of-fill))
+        (goto-char end-of-fill)
+        (forward-line)))
+    (major-mode-restore)))
 
 (setq phab-connection (phab-connect))
 (message "%s" phab-connection)
