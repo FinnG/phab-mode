@@ -2,13 +2,9 @@
 (require 'url)
 
 
-(setq phab-mode-cert  (concat "e5lzmmsjufkp5tcyx5s2ctnmre3ewdt3x46efi7asmz2rxur654gen6"
-                              "h2evp5sueysng6pp7neb2rk5fmyp4bea2wbok573gacipj26xudjwaq"
-                              "voltuxflighwezh6umhexgxaq56el4d6nqvkzqm6hwy3g455ae66hn2"
-                              "uouds47ndinlszx54s3dhvpzzz3gebgevxyvyr7gz2tmumszt74anrf"
-                              "w47uza26p3sxehxwgueroq3sv6eoai6frri")
-      phab-mode-user "fgrimwood"
-      phab-mode-url "http://phabricator")
+(setq phab-mode-cert  "SET ME"
+      phab-mode-user "SET ME"
+      phab-mode-url "SET ME")
 
 ;;;;;;;;;;;;;;;;;;:TODO sort this code out
 
